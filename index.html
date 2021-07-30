@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - particles - billboards</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Palette+Mosaic&display=swap" rel="stylesheet">
+
+    <style>
+      body {
+          margin: 0;
+          background-color: #000;
+          color: #fff;
+          font-family: 'Palette Mosaic', cursive;
+          /* font-family: Monospace; */
+          font-size: 2em;
+          line-height: 24px;
+          overscroll-behavior: none;
+        }
+
+        .center {
+          position: absolute;
+          top: 50%;
+          left: 25%;
+          transform: perspective(1px) translateY(-50%);
+                    /* left: 50%; */
+            word-wrap: break-word;
+        }
+
+        a {
+          color: #ff0;
+          text-decoration: none;
+        }
+
+        a:hover {
+          text-decoration: underline;
+        }
+
+        button {
+          cursor: pointer;
+          text-transform: uppercase;
+        }
+
+        #info {
+          position: absolute;
+          top: 0px;
+          width: 100%;
+          padding: 10px;
+          box-sizing: border-box;
+          text-align: center;
+          -moz-user-select: none;
+          -webkit-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+          pointer-events: none;
+          z-index: 1; /* TODO Solve this in HTML */
+        }
+
+        a, button, input, select {
+          pointer-events: auto;
+        }
+
+        .dg.ac {
+          -moz-user-select: none;
+          -webkit-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+          z-index: 2 !important; /* TODO Solve this in HTML */
+        }
+
+        #overlay {
+          position: absolute;
+          font-size: 16px;
+          z-index: 2;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          background: rgba(0,0,0,0.7);
+        }
+
+          #overlay button {
+            background: transparent;
+            border: 0;
+            border: 1px solid rgb(255, 255, 255);
+            border-radius: 4px;
+            color: #ffffff;
+            padding: 12px 18px;
+            text-transform: uppercase;
+            cursor: pointer;
+          }
+
+        #notSupported {
+          width: 50%;
+          margin: auto;
+          background-color: #f00;
+          margin-top: 20px;
+          padding: 10px;
+        }
+    </style>
+	</head>
+  <script>
+
+  function goAway(){
+          window.location ="https://kenchambers.dev"
+
+        }
+  </script>
+	<body onClick="goAway()">
+
+		
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js"></script> -->
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5.0/dat.gui.min.js"></script>
+    
+    <!-- <script type="text/javascript" src="dat.gui.min.js"></script> -->
+
+		<script type="module">
+
+
+			// import * as THREE from '../build/three.module.js';
+
+			// import Stats from './jsm/libs/stats.module.js';
+
+			// import { GUI } from './jsm/libs/dat.gui.module.js';
+
+			let camera, scene, renderer, stats, material;
+			let mouseX = 0, mouseY = 0;
+
+			let windowHalfX = window.innerWidth / 2;
+			let windowHalfY = window.innerHeight / 2;
+
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 2, 2000 );
+				camera.position.z = 1000;
+
+				scene = new THREE.Scene();
+				scene.fog = new THREE.FogExp2( 0x000000, 0.001 );
+
+				const geometry = new THREE.BufferGeometry();
+				const vertices = [];
+
+				const sprite = new THREE.TextureLoader().load( 'https://raw.githubusercontent.com/timoxley/threejs/master/examples/textures/sprites/disc.png' );
+
+				for ( let i = 0; i < 10000; i ++ ) {
+
+					const x = 2000 * Math.random() - 1000;
+					const y = 2000 * Math.random() - 1000;
+					const z = 2000 * Math.random() - 1000;
+
+					vertices.push( x, y, z );
+
+				}
+
+				geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+
+				material = new THREE.PointsMaterial( { size: 35, sizeAttenuation: true, map: sprite, alphaTest: 0.5, transparent: true } );
+				material.color.setHSL( 1.0, 0.3, 0.7 );
+
+				const particles = new THREE.Points( geometry, material );
+				scene.add( particles );
+
+				//
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				//
+
+				// stats = new Stats();
+				// document.body.appendChild( stats.dom );
+
+				//
+
+				// const gui = new GUI();
+
+				// gui.add( material, 'sizeAttenuation' ).onChange( function () {
+
+				// 	material.needsUpdate = true;
+
+				// } );
+
+				// gui.open();
+
+				//
+
+				document.body.style.touchAction = 'none';
+				document.body.addEventListener( 'pointermove', onPointerMove );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize );
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onPointerMove( event ) {
+
+				if ( event.isPrimary === false ) return;
+
+				mouseX = event.clientX - windowHalfX;
+				mouseY = event.clientY - windowHalfY;
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				// stats.update();
+
+			}
+
+			function render() {
+
+				const time = Date.now() * 0.00005;
+
+				camera.position.x += ( mouseX - camera.position.x ) * 0.05;
+				camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
+
+				camera.lookAt( scene.position );
+
+				const h = ( 360 * ( 1.0 + time ) % 360 ) / 360;
+				material.color.setHSL( h, 0.5, 0.5 );
+
+				renderer.render( scene, camera );
+
+			}
+
+
+		</script>
+    <div class="center">
+      <h1>KENCHAM</h1><br>
+      <h1>BERS.DEV</h1>
+    </div>
+    
+	</body>
+</html>
